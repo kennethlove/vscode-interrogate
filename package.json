@@ -1,5 +1,6 @@
 {
     "name": "interrogate",
+    "icon": "love.png",
     "displayName": "Interrogate",
     "description": "Docstring linting support for python files using `interrogate`.",
     "version": "2023.11.28",
@@ -8,7 +9,7 @@
         "name": "Interrogate",
         "module": "interrogate"
     },
-    "publisher": "Kenneth Love",
+    "publisher": "kennethlove",
     "license": "MIT",
     "homepage": "https://github.com/kennethlove/vscode-interrogate",
     "repository": {
@@ -24,15 +25,15 @@
     },
     "keywords": [
         "python",
-        "interrogate"
+        "interrogate",
+        "docstring"
     ],
     "engines": {
         "vscode": "^1.78.0"
     },
     "categories": [
         "Programming Languages",
-        "Linters",
-        "Formatters"
+        "Linters"
     ],
     "extensionDependencies": [
         "ms-python.python"
