@@ -48,7 +48,7 @@ RUNNER = pathlib.Path(__file__).parent / "lsp_runner.py"
 MAX_WORKERS = 5
 # TODO: Update the language server name and version.
 LSP_SERVER = server.LanguageServer(
-    name="<pytool-display-name>", version="<server version>", max_workers=MAX_WORKERS
+    name="Interrogate", version="1.5.0", max_workers=MAX_WORKERS
 )
 
 
@@ -67,15 +67,15 @@ LSP_SERVER = server.LanguageServer(
 
 # TODO: Update TOOL_MODULE with the module name for your tool.
 # e.g, TOOL_MODULE = "pylint"
-TOOL_MODULE = "<pytool-module>"
+TOOL_MODULE = "interrogate"
 
 # TODO: Update TOOL_DISPLAY with a display name for your tool.
 # e.g, TOOL_DISPLAY = "Pylint"
-TOOL_DISPLAY = "<pytool-display-name>"
+TOOL_DISPLAY = "Interrogate"
 
 # TODO: Update TOOL_ARGS with default argument you have to pass to your tool in
 # all scenarios.
-TOOL_ARGS = []  # default arguments always passed to your tool.
+TOOL_ARGS = ["-vv"]  # default arguments always passed to your tool.
 
 
 # TODO: If your tool is a linter then update this section.
@@ -129,7 +129,7 @@ def _linting_helper(document: workspace.Document) -> list[lsp.Diagnostic]:
 # TOOL_ARGS += ["--format='%(row)d,%(col)d,%(code).1s,%(code)s:%(text)s'"]
 # DIAGNOSTIC_RE =
 #    r"(?P<line>\d+),(?P<column>-?\d+),(?P<type>\w+),(?P<code>\w+\d+):(?P<message>[^\r\n]*)"
-DIAGNOSTIC_RE = re.compile(r"")
+DIAGNOSTIC_RE = re.compile(r"^\|\s*\b(?P<message>.*)\b \(L(?P<line>\d+)\)(?:.*MISSED)")
 
 
 def _parse_output_using_regex(content: str) -> list[lsp.Diagnostic]:
@@ -149,6 +149,12 @@ def _parse_output_using_regex(content: str) -> list[lsp.Diagnostic]:
         match = DIAGNOSTIC_RE.match(line)
         if match:
             data = match.groupdict()
+            data["column"] = 1
+            data["code"] = ["UNCOVERED"]
+            data["type"] = ["error"]
+            message = (
+                f"{data['message']} at line {data['line']} is missing a docstring."
+            )
             position = lsp.Position(
                 line=max([int(data["line"]) - line_offset, 0]),
                 character=int(data["column"]) - col_offset,
@@ -158,9 +164,9 @@ def _parse_output_using_regex(content: str) -> list[lsp.Diagnostic]:
                     start=position,
                     end=position,
                 ),
-                message=data.get("message"),
+                message=message,
                 severity=_get_severity(data["code"], data["type"]),
-                code=data["code"],
+                code=data["code"][0],
                 source=TOOL_MODULE,
             )
             diagnostics.append(diagnostic)
@@ -181,76 +187,6 @@ def _get_severity(*_codes: list[str]) -> lsp.DiagnosticSeverity:
 
 # **********************************************************
 # Linting features end here
-# **********************************************************
-
-# TODO: If your tool is a formatter then update this section.
-# Delete "Formatting features" section if your tool is NOT a
-# formatter.
-# **********************************************************
-# Formatting features start here
-# **********************************************************
-#  Sample implementations:
-#  Black: https://github.com/microsoft/vscode-black-formatter/blob/main/bundled/tool
-
-
-@LSP_SERVER.feature(lsp.TEXT_DOCUMENT_FORMATTING)
-def formatting(params: lsp.DocumentFormattingParams) -> list[lsp.TextEdit] | None:
-    """LSP handler for textDocument/formatting request."""
-    # If your tool is a formatter you can use this handler to provide
-    # formatting support on save. You have to return an array of lsp.TextEdit
-    # objects, to provide your formatted results.
-
-    document = LSP_SERVER.workspace.get_document(params.text_document.uri)
-    edits = _formatting_helper(document)
-    if edits:
-        return edits
-
-    # NOTE: If you provide [] array, VS Code will clear the file of all contents.
-    # To indicate no changes to file return None.
-    return None
-
-
-def _formatting_helper(document: workspace.Document) -> list[lsp.TextEdit] | None:
-    # TODO: For formatting on save support the formatter you use must support
-    # formatting via stdin.
-    # Read, and update_run_tool_on_document and _run_tool functions as needed
-    # for your formatter.
-    result = _run_tool_on_document(document, use_stdin=True)
-    if result.stdout:
-        new_source = _match_line_endings(document, result.stdout)
-        return [
-            lsp.TextEdit(
-                range=lsp.Range(
-                    start=lsp.Position(line=0, character=0),
-                    end=lsp.Position(line=len(document.lines), character=0),
-                ),
-                new_text=new_source,
-            )
-        ]
-    return None
-
-
-def _get_line_endings(lines: list[str]) -> str:
-    """Returns line endings used in the text."""
-    try:
-        if lines[0][-2:] == "\r\n":
-            return "\r\n"
-        return "\n"
-    except Exception:  # pylint: disable=broad-except
-        return None
-
-
-def _match_line_endings(document: workspace.Document, text: str) -> str:
-    """Ensures that the edited text line endings matches the document line endings."""
-    expected = _get_line_endings(document.source.splitlines(keepends=True))
-    actual = _get_line_endings(text.splitlines(keepends=True))
-    if actual == expected or actual is None or expected is None:
-        return text
-    return text.replace(actual, expected)
-
-
-# **********************************************************
-# Formatting features ends here
 # **********************************************************
 
 
