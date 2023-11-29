@@ -3,8 +3,8 @@
     "icon": "love.png",
     "displayName": "Interrogate",
     "description": "Docstring linting support for python files using `interrogate`.",
-    "version": "2023.11.28",
-    "preview": true,
+    "version": "2023.11.29",
+    "preview": false,
     "serverInfo": {
         "name": "Interrogate",
         "module": "interrogate"
